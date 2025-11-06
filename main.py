@@ -6,6 +6,7 @@ import time
 from ModbusTCPServer import ModbusTCPServer
 from ModbusTCPClient import ModbusTCPClient
 from db_communication import load_slaves_list, create_modbus_rtu_config, load_rtu_serial_params
+from fake_tcp_client import FakeTCPClient
 
 from flask import send_from_directory, Flask, render_template, request, redirect, url_for
 
@@ -27,7 +28,14 @@ client = ModbusTCPClient(
     data_dir=DATA_DIR,
     rtu_serial_params_dict=load_rtu_serial_params(CONFIG_FILE)
 )
-client.start_polling()
+#client.start_polling()
+
+face_client = FakeTCPClient(
+    polling_period=1,
+    slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
+    data_dir=DATA_DIR
+)
+face_client.start_polling()
 app = Flask(__name__)
 
 @app.route('/')
