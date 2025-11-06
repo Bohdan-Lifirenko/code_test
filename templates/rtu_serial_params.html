@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Modbus RTU Configuration</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        label { display: block; margin-top: 10px; }
+        input, select { width: 200px; padding: 4px; }
+        button { margin-top: 20px; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+    <h2>Modbus RTU Configuration</h2>
+
+    <form action="{{ url_for('change_rtu_serial_params') }}" method="post">
+        <label>Converter Port:</label>
+        <input type="text" name="convertor_port" value="{{ config.convertor_port }}">
+
+        <label>Baudrate:</label>
+        <input type="number" name="baudrate" value="{{ config.baudrate }}">
+
+        <label>Bytesize:</label>
+        <input type="number" name="bytesize" value="{{ config.bytesize }}">
+
+        <label>Parity:</label>
+        <select name="parity">
+            <option value="N" {% if config.parity == 'N' %}selected{% endif %}>None (N)</option>
+            <option value="E" {% if config.parity == 'E' %}selected{% endif %}>Even (E)</option>
+            <option value="O" {% if config.parity == 'O' %}selected{% endif %}>Odd (O)</option>
+        </select>
+
+        <label>Stopbits:</label>
+        <input type="number" name="stopbits" value="{{ config.stopbits }}">
+
+        <label>Polling period (s):</label>
+        <input type="number" name="polling_period" value="{{ config.polling_period }}">
+
+        <br>
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>

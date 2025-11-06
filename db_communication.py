@@ -3,7 +3,7 @@ import sqlite3
 from datetime import date, datetime
 
 
-def load_configs(data_dir, config_file):
+def load_slaves_list(data_dir, config_file):
     db_file = os.path.join(data_dir, config_file)
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
@@ -65,3 +65,38 @@ def archive_to_sqlite(data_dir, idDevice, value):
 
     # Close the connection
     conn.close()
+
+# --- Database setup ---
+def create_modbus_rtu_config(config_file):
+    with sqlite3.connect(config_file) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS rtu_serial_params (
+                            id INTEGER PRIMARY KEY,
+                            convertor_port TEXT,
+                            baudrate INTEGER,
+                            bytesize INTEGER,
+                            parity TEXT,
+                            stopbits INTEGER,
+                            polling_period INTEGER
+                        )''')
+        # Ensure one default config exists
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM rtu_serial_params")
+        if cur.fetchone()[0] == 0:
+            conn.execute("""INSERT INTO rtu_serial_params
+                            (convertor_port, baudrate, bytesize, parity, stopbits, polling_period)
+                            VALUES ('COM7', 9600, 8, 'N', 1, 1)""")
+        conn.commit()
+
+def load_rtu_serial_params(config_file):
+    with sqlite3.connect(config_file) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM rtu_serial_params WHERE id = 1")
+        config = cur.fetchone()
+
+    if config:
+        keys = ["id", "convertor_port", "baudrate", "bytesize", "parity", "stopbits", "polling_period"]
+        config_dict = dict(zip(keys, config))
+    else:
+        config_dict = None
+
+    return config_dict

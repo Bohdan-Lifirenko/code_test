@@ -8,7 +8,7 @@ from datetime import datetime
 
 from pymodbus import pymodbus_apply_logging_config, ModbusException
 from pymodbus.client import ModbusSerialClient
-from db_communication import load_configs, archive_to_sqlite
+from db_communication import load_slaves_list, archive_to_sqlite, load_rtu_serial_params
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -32,38 +32,34 @@ logger.addHandler(file)
 class ModbusTCPClient:
     def __init__(
             self,
-            convertor_port,
-            baudrate,
-            bytesize,
-            parity,
-            stopbits,
             polling_period,
-            DATA_DIR,
-            CONFIG_FILE,
-            context
+            slaves_config,
+            context,
+            data_dir,
+            rtu_serial_params_dict
     ):
-        self.convertor_port = convertor_port
-        self.baudrate = baudrate
-        self.bytesize = bytesize
-        self.parity = parity
-        self.stopbits = stopbits
         self.polling_period = polling_period
-
-        self.DATA_DIR = DATA_DIR
-        self.CONFIG_FILE = CONFIG_FILE
+        self.rtu_serial_params_dict = rtu_serial_params_dict
+        self.slaves_config = slaves_config
 
         self.context = context
+
         self.client = ModbusSerialClient(
-            port='COM7',          # Or '/dev/ttyUSB0' on Linux/macOS
-            baudrate=9600,        # Match your slave's baud rate
-            bytesize=8,
-            parity='N',           # 'N' for none, 'E' for even, 'O' for odd
-            stopbits=1,
-            timeout=2,             # In seconds
-            retries=0
+            port=rtu_serial_params_dict["convertor_port"],          # Or '/dev/ttyUSB0' on Linux/macOS
+            baudrate=rtu_serial_params_dict["baudrate"],        # Match your slave's baud rate
+            bytesize=rtu_serial_params_dict["bytesize"],
+            parity=rtu_serial_params_dict["parity"],           # 'N' for none, 'E' for even, 'O' for odd
+            stopbits=rtu_serial_params_dict["stopbits"],
+            timeout=rtu_serial_params_dict["stopbits"],             # In seconds
+            retries=rtu_serial_params_dict["polling_period"]
         )
 
+        self.data_dir = data_dir
+
         self.is_polling = threading.Event()
+        self.need_to_update_slaves_list = threading.Event()
+        self.need_to_update_rtu_serial_params = threading.Event()
+
 
     def start_polling(self):
         def poll_modbus_rtu():
@@ -73,11 +69,18 @@ class ModbusTCPClient:
                 logging.error("Failed to connect. Check port, wiring, or parameters.")
                 return  # Don't exit; let the app continue running
 
-            current_configs = load_configs(self.DATA_DIR, self.CONFIG_FILE)
+            current_configs = self.slaves_config
+
             try:
                 while self.is_polling.is_set():
+                    if self.need_to_update_slaves_list.is_set():
+                        current_configs = self.slaves_config
+                        self.need_to_update_slaves_list.clear()
+
                     for conf in current_configs:
                         key = (conf['slave_id'], conf['address'])
+                        logger.info(
+                            f"Polling slave {conf['slave_id']}, register {conf['address']}")
                         try:
                             response = self.client.read_holding_registers(address=conf['address'], count=1,
                                                                      device_id=conf['slave_id'])
@@ -86,18 +89,21 @@ class ModbusTCPClient:
                                 # Set slave value to TCP Server
                                 self.context[0].setValues(3, conf['slave_id'], [value])
                                 # Save slave value to SQLite
-                                archive_to_sqlite(self.DATA_DIR, conf['slave_id'], value)
+                                archive_to_sqlite(self.data_dir, conf['slave_id'], value)
 
                                 logger.info(
-                                    f"OK:Slave {conf['slave_id']} Register {conf['address']}: {value}")
+                                    f"OK: {value}")
                             else:
                                 self.context[0].setValues(3, conf['slave_id'], [0])
+                                archive_to_sqlite(self.data_dir, conf['slave_id'], 0)
                                 logger.warning(
                                     f"Fail to read:Slave {conf['slave_id']} Register {conf['address']}: {response}")
 
                             time.sleep(self.polling_period)  # Poll every second
                         except ModbusException as e:
                             self.context[0].setValues(3, conf['slave_id'], [0])
+                            archive_to_sqlite(self.data_dir, conf['slave_id'], 0)
+
                             logger.error(e)
                             time.sleep(1)  # Poll every second
             except Exception as e:
@@ -122,3 +128,32 @@ class ModbusTCPClient:
 
         time.sleep(1)
         logger.info("ModbusRTUDataCollector stopped.")
+
+    def change_slaves_config(self, new_config):
+        self.slaves_config = new_config
+        self.need_to_update_slaves_list.set()
+
+    def change_rtu_serial_params(self, new_rtu_serial_params_dict):
+        self.rtu_serial_params_dict = new_rtu_serial_params_dict
+        self.need_to_update_slaves_list.set()
+
+        self.client = ModbusSerialClient(
+            port=new_rtu_serial_params_dict["convertor_port"],  # Or '/dev/ttyUSB0' on Linux/macOS
+            baudrate=new_rtu_serial_params_dict["baudrate"],  # Match your slave's baud rate
+            bytesize=new_rtu_serial_params_dict["bytesize"],
+            parity=new_rtu_serial_params_dict["parity"],  # 'N' for none, 'E' for even, 'O' for odd
+            stopbits=new_rtu_serial_params_dict["stopbits"],
+            timeout=new_rtu_serial_params_dict["stopbits"],  # In seconds
+            retries=new_rtu_serial_params_dict["polling_period"]
+        )
+
+    def change_rtu_serial_params(
+            self,
+            params_dict
+    ):
+        self.convertor_port = params_dict["convertor_port"]
+        self.baudrate = params_dict["baudrate"]
+        self.bytesize = params_dict["bytesize"]
+        self.parity = params_dict["parity"]
+        self.stopbits = params_dict["stopbits"]
+        self.polling_period = params_dict["polling_period"]

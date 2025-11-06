@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Modbus RTU Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2, h3 { color: #333; }
+        form { margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin: 5px 0; }
+        .config-item { display: flex; align-items: center; }
+        .config-item form { margin: 0 10px; display: inline; }
+    </style>
+</head>
+<body>
+    <h1>Modbus RTU Configuration and Data</h1>
+
+    <h2>Add Slave and Register</h2>
+    <form method="POST" action="{{ url_for('add_slave') }}">
+        Slave ID: <input type="number" name="slave_id" required><br>
+        Register Address: <input type="number" name="address" required><br>
+        <button type="submit">Add</button>
+    </form>
+
+    <h2>Current Configurations</h2>
+    <ul>
+        {% for conf in configs %}
+            <li class="config-item">
+                Slave {{ conf.slave_id }} - Register {{ conf.address }}
+                <a href="{{ url_for('edit_slave', slave_id=conf.slave_id, old_address=conf.address) }}">Edit</a>
+                <form method="POST" action="{{ url_for('delete_slave') }}" onsubmit="return confirm('Are you sure you want to delete this config?');">
+                    <input type="hidden" name="slave_id" value="{{ conf.slave_id }}">
+                    <input type="hidden" name="address" value="{{ conf.address }}">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
