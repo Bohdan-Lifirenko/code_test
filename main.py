@@ -5,7 +5,8 @@ import time
 
 from ModbusTCPServer import ModbusTCPServer
 from ModbusTCPClient import ModbusTCPClient
-from db_communication import load_slaves_list, create_modbus_rtu_config, load_rtu_serial_params
+from db_communication import load_slaves_list, create_modbus_rtu_config, load_rtu_serial_params, update_servers_config, \
+    get_servers_config, create_servers_config
 from fake_tcp_client import FakeTCPClient
 
 from flask import send_from_directory, Flask, render_template, request, redirect, url_for
@@ -17,8 +18,10 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # Database file inside that folder
 CONFIG_FILE = os.path.join(DATA_DIR, "config.sqlite")
 create_modbus_rtu_config(CONFIG_FILE)
+create_servers_config(CONFIG_FILE)
+network_config_dict = get_servers_config(CONFIG_FILE)
 
-server = ModbusTCPServer(ip='127.0.0.1', port=5020)
+server = ModbusTCPServer(ip=network_config_dict["modbus_ip"], port=network_config_dict["modbus_port"])
 server.start()
 
 client = ModbusTCPClient(
@@ -28,22 +31,25 @@ client = ModbusTCPClient(
     data_dir=DATA_DIR,
     rtu_serial_params_dict=load_rtu_serial_params(CONFIG_FILE)
 )
-#client.start_polling()
+client.start_polling()
 
-face_client = FakeTCPClient(
-    polling_period=1,
-    slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
-    data_dir=DATA_DIR
-)
-face_client.start_polling()
+# face_client = FakeTCPClient(
+#     polling_period=1,
+#     slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
+#     data_dir=DATA_DIR
+# )
+# face_client.start_polling()
 app = Flask(__name__)
 
 @app.route('/')
-def home():
+def index():
+    return render_template('index.html')
+@app.route('/download_data')
+def download_data():
     # Get list of files in the folder
     files = os.listdir(DATA_DIR)
 
-    return render_template('index.html', files=files)
+    return render_template('download_data.html', files=files)
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -167,10 +173,25 @@ def change_rtu_serial_params():
 
     return redirect(url_for('rtu_serial_params'))
 
+# --- Routes ---
+@app.route("/network_config", methods=["GET", "POST"])
+def network_config():
+    if request.method == "POST":
+        flask_ip = request.form.get("flask_ip")
+        flask_port = int(request.form.get("flask_port"))
+        modbus_ip = request.form.get("modbus_ip")
+        modbus_port = int(request.form.get("modbus_port"))
+
+        update_servers_config(flask_ip, flask_port, modbus_ip, modbus_port, CONFIG_FILE)
+        return redirect(url_for("network_config"))
+
+    config = get_servers_config(CONFIG_FILE)
+    return render_template("network_config.html", config=config)
+
 # Example usage in a program with other tasks:
 if __name__ == "__main__":
     # Запускаємо Flask в іншому потоці (для розробки; у продакшені використовуйте gunicorn)
-    flask_thread = threading.Thread(target=lambda: app.run(host="0.0.0.0", port=5000))
+    flask_thread = threading.Thread(target=lambda: app.run(host=network_config_dict["flask_ip"], port=network_config_dict["flask_port"]))
     flask_thread.start()
 
     # server = ModbusTCPServer(ip='127.0.0.1', port=5020)

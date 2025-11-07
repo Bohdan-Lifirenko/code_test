@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Configuration</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        form { max-width: 400px; }
+        label { display: block; margin-top: 10px; }
+        input { width: 100%; padding: 6px; margin-top: 4px; }
+        button { margin-top: 15px; padding: 8px 12px; }
+    </style>
+</head>
+<body>
+    <h1>Network Configuration</h1>
+    <form method="post">
+        <h3>Flask Server</h3>
+        <label>IP Address</label>
+        <input type="text" name="flask_ip" value="{{ config.flask_ip }}" required>
+
+        <label>Port</label>
+        <input type="number" name="flask_port" value="{{ config.flask_port }}" required>
+
+        <h3>Modbus Server</h3>
+        <label>IP Address</label>
+        <input type="text" name="modbus_ip" value="{{ config.modbus_ip }}" required>
+
+        <label>Port</label>
+        <input type="number" name="modbus_port" value="{{ config.modbus_port }}" required>
+
+        <button type="submit">Save Configuration</button>
+    </form>
+</body>
+</html>

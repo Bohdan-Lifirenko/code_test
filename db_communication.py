@@ -100,3 +100,39 @@ def load_rtu_serial_params(config_file):
         config_dict = None
 
     return config_dict
+
+# --- Database setup ---
+def create_servers_config(config_file):
+    with sqlite3.connect(config_file) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS servers_config (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                flask_ip TEXT NOT NULL,
+                flask_port INTEGER NOT NULL,
+                modbus_ip TEXT NOT NULL,
+                modbus_port INTEGER NOT NULL
+            )
+        ''')
+        # Ensure one default config exists
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM servers_config")
+        if cur.fetchone()[0] == 0:
+            conn.execute("""
+                           INSERT INTO servers_config (flask_ip, flask_port, modbus_ip, modbus_port)
+                           VALUES (?, ?, ?, ?)
+                           """, ("127.0.0.1", 5000, "127.0.0.1", 5020))
+        conn.commit()
+
+def get_servers_config(config_file):
+    with sqlite3.connect(config_file) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM servers_config LIMIT 1").fetchone()
+        return dict(row)
+
+def update_servers_config(flask_ip, flask_port, modbus_ip, modbus_port, config_file):
+    with sqlite3.connect(config_file) as conn:
+        conn.execute("""
+            UPDATE servers_config
+            SET flask_ip=?, flask_port=?, modbus_ip=?, modbus_port=?
+            WHERE id=1
+        """, (flask_ip, flask_port, modbus_ip, modbus_port))
+        conn.commit()

@@ -2,25 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>File List</title>
+    <title>Configuration Menu</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #333; }
-        ul { list-style-type: none; padding: 0; }
-        li { margin: 10px 0; }
-        a { text-decoration: none; color: #007bff; }
-        a:hover { text-decoration: underline; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            text-align: center;
+            padding-top: 80px;
+        }
+        h1 {
+            color: #333;
+        }
+        a {
+            display: block;
+            margin: 15px auto;
+            width: 220px;
+            padding: 12px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <h1>Files Available for Download</h1>
-    <ul>
-        {% for file in files %}
-            <li><a href="/download/{{ file }}">{{ file }}</a></li>
-        {% endfor %}
-        {% if not files %}
-            <li>No files found in the folder.</li>
-        {% endif %}
-    </ul>
+    <h1>Configuration Menu</h1>
+    <a href="{{ url_for('download_data') }}">Download Data</a>
+    <a href="{{ url_for('network_config') }}">Network Parameters</a>
+    <a href="{{ url_for('rtu_serial_params') }}">RTU Serial Parameters</a>
+    <a href="{{ url_for('modbus_rtu_slaves_list') }}">Modbus RTU Slaves</a>
+
 </body>
 </html>
