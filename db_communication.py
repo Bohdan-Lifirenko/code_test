@@ -47,13 +47,14 @@ def archive_to_sqlite(data_dir, idDevice, value):
 
     # Prepare data for one row
     idChannel = idDevice
-    time_int = int(datetime.now().timestamp())  # UNIX timestamp
+    now = datetime.now()
+    seconds_today = now.hour * 3600 + now.minute * 60 + now.second
     strTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Human-readable
 
     cursor.execute("""
                    INSERT INTO arhive (idDevice, idChannel, value, time, strTime)
                    VALUES (?, ?, ?, ?, ?)
-                   """, (idDevice, idChannel, value, time_int, strTime))
+                   """, (idDevice, idChannel, value, seconds_today, strTime))
 
     # Save changes
     conn.commit()
