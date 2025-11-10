@@ -11,25 +11,9 @@ from pymodbus.client import ModbusSerialClient
 from db_communication import load_slaves_list, archive_to_sqlite, load_rtu_serial_params
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-#pymodbus_apply_logging_config("INFO")
 
-# Create handlers
-console = logging.StreamHandler()
-file = logging.FileHandler("app.log")
 
-# Create formatter
-formatter = logging.Formatter("%(asctime)s %(threadName)s:[%(levelname)s] %(name)s: %(message)s")
-
-# Attach formatter to handlers
-console.setFormatter(formatter)
-file.setFormatter(formatter)
-
-# Attach handlers to logger
-logger.addHandler(console)
-logger.addHandler(file)
-
-class ModbusTCPClient:
+class ModbusRTUCollector:
     def __init__(
             self,
             polling_period,

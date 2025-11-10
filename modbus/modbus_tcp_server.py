@@ -17,23 +17,6 @@ from pymodbus.server import (
 from pymodbus.framer import FramerType
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-pymodbus_apply_logging_config("INFO")
-
-# Create handlers
-console = logging.StreamHandler()
-file = logging.FileHandler("app.log")
-
-# Create formatter
-formatter = logging.Formatter("%(asctime)s %(threadName)s:[%(levelname)s] %(name)s: %(message)s")
-
-# Attach formatter to handlers
-console.setFormatter(formatter)
-file.setFormatter(formatter)
-
-# Attach handlers to logger
-logger.addHandler(console)
-logger.addHandler(file)
 
 class ModbusTCPServer:
     def __init__(self, ip, port):
