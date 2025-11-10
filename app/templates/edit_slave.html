@@ -12,12 +12,12 @@
 <body>
     <h1>Edit Slave and Register</h1>
 
-    <form method="POST" action="{{ url_for('edit_slave', slave_id=slave_id, old_address=address) }}">
+    <form method="POST" action="{{ url_for('modbus_rtu_slaves_list.edit_slave', slave_id=slave_id, old_address=address) }}">
         Slave ID: <input type="number" name="slave_id" value="{{ slave_id }}" required><br>
         Register Address: <input type="number" name="address" value="{{ address }}" required><br>
         <button type="submit">Update</button>
     </form>
 
-    <a href="{{ url_for('modbus_rtu_slaves_list') }}">Cancel</a>
+    <a href="{{ url_for('modbus_rtu_slaves_list.modbus_rtu_slaves_list') }}">Cancel</a>
 </body>
 </html>

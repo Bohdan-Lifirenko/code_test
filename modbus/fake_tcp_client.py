@@ -8,7 +8,7 @@ logger.setLevel(logging.INFO)
 
 # Create handlers
 console = logging.StreamHandler()
-file = logging.FileHandler("app.log")
+file = logging.FileHandler("../app.log")
 
 # Create formatter
 formatter = logging.Formatter("%(asctime)s %(threadName)s:[%(levelname)s] %(name)s: %(message)s")
