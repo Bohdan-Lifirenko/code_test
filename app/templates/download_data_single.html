@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Download Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        select { margin: 10px 0; padding: 5px; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin: 10px 0; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        #file-list { display: none; } /* Початково прихований */
+    </style>
+</head>
+<body>
+    <h1>Select Year and Month</h1>
+
+    <label for="year-select">Year:</label>
+    <select id="year-select">
+        <option value="">-- Select Year --</option>
+    </select>
+
+    <label for="month-select">Month:</label>
+    <select id="month-select" disabled>
+        <option value="">-- Select Month --</option>
+    </select>
+
+    <h2>Files Available for Download</h2>
+    <ul id="file-list"></ul>
+
+    <script>
+        // Отримати файли з Jinja
+        const allFiles = {{ files_json | safe }};
+
+        // Витягнути унікальні роки
+        const years = new Set();
+        allFiles.forEach(file => {
+            const year = file.split('-')[0];
+            years.add(year);
+        });
+        const sortedYears = Array.from(years).sort((a, b) => b - a); // Від новіших
+
+        // Заповнити dropdown років
+        const yearSelect = document.getElementById('year-select');
+        sortedYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        });
+
+        // При зміні року: оновити місяці
+        yearSelect.addEventListener('change', function() {
+            const selectedYear = this.value;
+            const monthSelect = document.getElementById('month-select');
+            monthSelect.innerHTML = '<option value="">-- Select Month --</option>';
+            monthSelect.disabled = true;
+
+            if (selectedYear) {
+                const months = new Set();
+                allFiles.forEach(file => {
+                    const parts = file.split('-');
+                    if (parts[0] === selectedYear) {
+                        months.add(parts[1]);
+                    }
+                });
+                const sortedMonths = Array.from(months).sort((a, b) => a - b);
+
+                sortedMonths.forEach(month => {
+                    const option = document.createElement('option');
+                    option.value = month;
+                    option.textContent = month;
+                    monthSelect.appendChild(option);
+                });
+                monthSelect.disabled = false;
+            }
+
+            // Скинути список файлів
+            updateFileList('', '');
+        });
+
+        // При зміні місяця: оновити список файлів
+        const monthSelect = document.getElementById('month-select');
+        monthSelect.addEventListener('change', function() {
+            const selectedYear = document.getElementById('year-select').value;
+            const selectedMonth = this.value;
+            updateFileList(selectedYear, selectedMonth);
+        });
+
+        function updateFileList(year, month) {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+
+            if (year && month) {
+                const prefix = `${year}-${month}-`;
+                const filteredFiles = allFiles.filter(file => file.startsWith(prefix));
+
+                if (filteredFiles.length === 0) {
+                    const li = document.createElement('li');
+                    li.textContent = 'No files found.';
+                    fileList.appendChild(li);
+                } else {
+                    filteredFiles.forEach(file => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.href = `/download/${file}`;
+                        a.textContent = file;
+                        li.appendChild(a);
+                        fileList.appendChild(li);
+                    });
+                }
+                fileList.style.display = 'block';
+            } else {
+                fileList.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
