@@ -3,13 +3,20 @@ import sqlite3
 import threading
 import time
 
-from ModbusTCPServer import ModbusTCPServer
-from ModbusTCPClient import ModbusTCPClient
+from app.flask_server import run_server
+from modbus.modbus_tcp_server import ModbusTCPServer
+from modbus.modbus_rtu_collector import ModbusRTUCollector
+from modbus.fake_tcp_client import FakeTCPClient
 from db_communication import load_slaves_list, create_modbus_rtu_config, load_rtu_serial_params, update_servers_config, \
-    get_servers_config, create_servers_config
-from fake_tcp_client import FakeTCPClient
+    get_servers_config, create_servers_config, create_slaves_list
 
 from flask import send_from_directory, Flask, render_template, request, redirect, url_for
+from logging_setup import setup_logging
+import logging
+logger = logging.getLogger(__name__)  # __name__ is the module's name, e.g., "modbus.client"
+
+setup_logging('INFO')
+
 
 # Get absolute path to the folder where the script is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,8 +24,12 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 # Database file inside that folder
 CONFIG_FILE = os.path.join(DATA_DIR, "config.sqlite")
+logger.info(f"Path to config file: {CONFIG_FILE}")
+
 create_modbus_rtu_config(CONFIG_FILE)
 create_servers_config(CONFIG_FILE)
+create_slaves_list(CONFIG_FILE)
+
 network_config_dict = get_servers_config(CONFIG_FILE)
 
 server = ModbusTCPServer(ip=network_config_dict["modbus_ip"], port=network_config_dict["modbus_port"])
@@ -182,11 +193,152 @@ def network_config():
         modbus_ip = request.form.get("modbus_ip")
         modbus_port = int(request.form.get("modbus_port"))
 
-        update_servers_config(flask_ip, flask_port, modbus_ip, modbus_port, CONFIG_FILE)
-        return redirect(url_for("network_config"))
-
-    config = get_servers_config(CONFIG_FILE)
-    return render_template("network_config.html", config=config)
+# @app.route('/')
+# def index():
+#     return render_template('index.html')
+# @app.route('/download_data')
+# def download_data():
+#     # Get list of files in the folder
+#     files = os.listdir(DATA_DIR)
+#
+#     return render_template('download_data.html', files=files)
+#
+# @app.route('/download/<filename>')
+# def download_file(filename):
+#     # Serve the file from the files folder
+#     return send_from_directory(DATA_DIR, filename, as_attachment=True)
+#
+# # Flask route to display the data and form
+# @app.route('/modbus_rtu_slaves_list', methods=['GET'])
+# def modbus_rtu_slaves_list():
+#     current_configs = load_slaves_list(DATA_DIR, CONFIG_FILE)
+#
+#     return render_template('modbus_rtu_slaves_list.html', configs=current_configs)
+#
+# # Route to add a new slave/register
+# @app.route('/add_slave', methods=['POST'])
+# def add_slave():
+#     slave_id = int(request.form['slave_id'])
+#     address = int(request.form['address'])
+#
+#     conn = sqlite3.connect(CONFIG_FILE)
+#     c = conn.cursor()
+#     try:
+#         c.execute("INSERT INTO slaves VALUES (?, ?)", (slave_id, address))
+#         conn.commit()
+#     except sqlite3.IntegrityError:
+#         # Already exists (due to PRIMARY KEY)
+#         pass
+#     conn.close()
+#
+#     client.change_slaves_config(load_slaves_list(DATA_DIR, CONFIG_FILE))
+#
+#     return redirect(url_for('modbus_rtu_slaves_list'))
+#
+# # Route to delete a slave/register
+# @app.route('/delete_slave', methods=['POST'])
+# def delete_slave():
+#     slave_id = int(request.form['slave_id'])
+#     address = int(request.form['address'])
+#
+#     conn = sqlite3.connect(CONFIG_FILE)
+#     c = conn.cursor()
+#     c.execute("DELETE FROM slaves WHERE slave_id = ? AND address = ?", (slave_id, address))
+#     conn.commit()
+#     conn.close()
+#
+#     client.change_slaves_config(load_slaves_list(DATA_DIR, CONFIG_FILE))
+#
+#     return redirect(url_for('modbus_rtu_slaves_list'))
+#
+# # Route to edit a slave/register (GET for form, POST for update)
+# @app.route('/edit_slave/<int:slave_id>/<int:old_address>', methods=['GET', 'POST'])
+# def edit_slave(slave_id, old_address):
+#     if request.method == 'POST':
+#         new_slave_id = int(request.form['slave_id'])
+#         new_address = int(request.form['address'])
+#
+#         # If no change, redirect
+#         if new_slave_id == slave_id and new_address == old_address:
+#             return redirect(url_for('index'))
+#
+#         conn = sqlite3.connect(CONFIG_FILE)
+#         c = conn.cursor()
+#         c.execute("DELETE FROM slaves WHERE slave_id = ? AND address = ?", (slave_id, old_address))
+#
+#         # Insert new config (if not exists)
+#         try:
+#             c.execute("INSERT INTO slaves VALUES (?, ?)", (new_slave_id, new_address))
+#         except sqlite3.IntegrityError:
+#             pass  # Already exists
+#         conn.commit()
+#         conn.close()
+#
+#         client.change_slaves_config(load_slaves_list(DATA_DIR, CONFIG_FILE))
+#
+#         return redirect(url_for('modbus_rtu_slaves_list'))
+#
+#     # GET: Render edit form
+#     return render_template('edit_slave.html', slave_id=slave_id, address=old_address)
+#
+# # --- Routes ---
+# @app.route('/rtu_serial_params')
+# def rtu_serial_params():
+#     with sqlite3.connect(CONFIG_FILE) as conn:
+#         cur = conn.cursor()
+#         cur.execute("SELECT * FROM rtu_serial_params WHERE id = 1")
+#         config = cur.fetchone()
+#
+#     if config:
+#         keys = ["id", "convertor_port", "baudrate", "bytesize", "parity", "stopbits", "polling_period"]
+#         config_dict = dict(zip(keys, config))
+#     else:
+#         config_dict = {}
+#
+#     return render_template("rtu_serial_params.html", config=config_dict)
+#
+#
+# @app.route('/change_rtu_serial_params', methods=['POST'])
+# def change_rtu_serial_params():
+#     convertor_port = request.form['convertor_port']
+#     baudrate = int(request.form['baudrate'])
+#     bytesize = int(request.form['bytesize'])
+#     parity = request.form['parity']
+#     stopbits = int(request.form['stopbits'])
+#     polling_period = int(request.form['polling_period'])
+#
+#
+#
+#     with sqlite3.connect(CONFIG_FILE) as conn:
+#         conn.execute('''UPDATE rtu_serial_params SET
+#                             convertor_port=?,
+#                             baudrate=?,
+#                             bytesize=?,
+#                             parity=?,
+#                             stopbits=?,
+#                             polling_period=?
+#                         WHERE id=1''',
+#                      (convertor_port, baudrate, bytesize, parity, stopbits, polling_period))
+#         conn.commit()
+#
+#         client.change_rtu_serial_params(load_rtu_serial_params(CONFIG_FILE))
+#
+#     return redirect(url_for('rtu_serial_params'))
+#
+# # --- Routes ---
+# @app.route("/network_config", methods=["GET", "POST"])
+# def network_config():
+#     if request.method == "POST":
+#         flask_ip = request.form.get("flask_ip")
+#         flask_port = int(request.form.get("flask_port"))
+#         modbus_ip = request.form.get("modbus_ip")
+#         modbus_port = int(request.form.get("modbus_port"))
+#
+#         update_servers_config(flask_ip, flask_port, modbus_ip, modbus_port, CONFIG_FILE)
+#         return redirect(url_for("network_config"))
+#
+#     config = get_servers_config(CONFIG_FILE)
+#     return render_template("network_config.html", config=config)
 
 # Example usage in a program with other tasks:
 if __name__ == "__main__":

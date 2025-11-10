@@ -137,3 +137,22 @@ def update_servers_config(flask_ip, flask_port, modbus_ip, modbus_port, config_f
             WHERE id=1
         """, (flask_ip, flask_port, modbus_ip, modbus_port))
         conn.commit()
+
+def create_slaves_list(config_file):
+    conn = sqlite3.connect(config_file)  # Creates or opens file
+    cursor = conn.cursor()  # Used to execute SQL commands
+    if not table_exists(conn, 'slaves'):
+        conn.execute('''CREATE TABLE IF NOT EXISTS slaves
+        (
+            slave_id
+            INTEGER,
+            address
+            INTEGER,
+            PRIMARY
+            KEY
+                     (
+            slave_id
+                     ))''')
+
+        conn.commit()
+        conn.close()
