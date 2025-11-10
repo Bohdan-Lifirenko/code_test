@@ -3,7 +3,7 @@ import sqlite3
 import threading
 import time
 
-from app.flask_server import run_server
+from app.flask_server import run_server, add_variable_to_server_config
 from modbus.modbus_tcp_server import ModbusTCPServer
 from modbus.modbus_rtu_collector import ModbusRTUCollector
 from modbus.fake_tcp_client import FakeTCPClient
@@ -15,11 +15,17 @@ from logging_setup import setup_logging
 import logging
 logger = logging.getLogger(__name__)  # __name__ is the module's name, e.g., "modbus.client"
 
-setup_logging('INFO')
-
-
 # Get absolute path to the folder where the script is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+#Setting log folder
+DATA_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(DATA_DIR, exist_ok=True)
+LAST_LOG_FILE = os.path.join(DATA_DIR, "app.log")
+
+setup_logging(log_level='INFO', log_file_path=LAST_LOG_FILE)
+
+#Setting data folder
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 # Database file inside that folder
@@ -201,12 +207,16 @@ face_client.start_polling()
 
 # Example usage in a program with other tasks:
 if __name__ == "__main__":
+    add_variable_to_server_config("DATA_DIR", DATA_DIR)
+    add_variable_to_server_config("CONFIG_FILE", CONFIG_FILE)
+    add_variable_to_server_config("LAST_LOG_FILE", LAST_LOG_FILE)
+
     run_server(
         ip=network_config_dict["flask_ip"],
-        port=network_config_dict["flask_port"],
-        data_dir=DATA_DIR,
-        config_file=CONFIG_FILE
+        port=network_config_dict["flask_port"]
     )
+
+
 
     # Запускаємо Flask в іншому потоці (для розробки; у продакшені використовуйте gunicorn)
     # flask_thread = threading.Thread(target=lambda: app.run(host=network_config_dict["flask_ip"], port=network_config_dict["flask_port"]))
