@@ -34,7 +34,7 @@ def download_data():
     # Передаємо файли як JSON для JS
     return render_template('download_data_single.html', files_json=json.dumps(valid_files))
 
-@download_data_bp.route('/download/<filename>')
+@download_data_bp.route('/download/data/<filename>')
 def download_file(filename):
     # Serve the file from the files folder
     return send_from_directory(current_app.config.get("DATA_DIR"), filename, as_attachment=True)

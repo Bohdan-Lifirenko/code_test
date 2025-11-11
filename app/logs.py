@@ -2,7 +2,7 @@ import os
 import json
 import datetime
 from collections import deque
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, send_from_directory
 
 logs_bp = Blueprint('logs', __name__)
 
@@ -56,3 +56,8 @@ def download_logs():
                            files_json=json.dumps(valid_files),
                            current_year=current_year,
                            current_month=current_month)
+
+@logs_bp.route('/download/logs/<filename>')
+def download_file(filename):
+    # Serve the file from the files folder
+    return send_from_directory(current_app.config.get("LOGS_DIR"), filename, as_attachment=True)

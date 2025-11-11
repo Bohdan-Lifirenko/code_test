@@ -129,7 +129,7 @@
                     filteredFiles.forEach(file => {
                         const li = document.createElement('li');
                         const a = document.createElement('a');
-                        a.href = `/download/${file}`;
+                        a.href = `/download/logs/${file}`;
                         a.textContent = file;
                         li.appendChild(a);
                         fileList.appendChild(li);
