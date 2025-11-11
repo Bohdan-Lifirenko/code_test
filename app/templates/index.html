@@ -33,6 +33,8 @@
 <body>
     <h1>Configuration Menu</h1>
     <a href="{{ url_for('download_data.download_data') }}">Download Data</a>
+    <a href="{{ url_for('logs.last_logs') }}">List Of Current Logs</a>
+    <a href="{{ url_for('logs.download_logs') }}">Download Logs Files</a>
     <a href="{{ url_for('network_config.network_config') }}">Network Parameters</a>
     <a href="{{ url_for('rtu_serial_params.rtu_serial_params') }}">RTU Serial Parameters</a>
     <a href="{{ url_for('modbus_rtu_slaves_list.modbus_rtu_slaves_list') }}">Modbus RTU Slaves</a>
