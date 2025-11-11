@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)  # __name__ is the module's name, e.g., "mo
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #Setting log folder
-DATA_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(DATA_DIR, exist_ok=True)
-LAST_LOG_FILE = os.path.join(DATA_DIR, "app.log")
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
+LAST_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
 
 setup_logging(log_level='INFO', log_file_path=LAST_LOG_FILE)
 
@@ -209,6 +209,7 @@ face_client.start_polling()
 if __name__ == "__main__":
     add_variable_to_server_config("DATA_DIR", DATA_DIR)
     add_variable_to_server_config("CONFIG_FILE", CONFIG_FILE)
+    add_variable_to_server_config("LOGS_DIR", LOGS_DIR)
     add_variable_to_server_config("LAST_LOG_FILE", LAST_LOG_FILE)
 
     run_server(
