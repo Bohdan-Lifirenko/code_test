@@ -15,61 +15,82 @@ from logging_setup import setup_logging
 import logging
 logger = logging.getLogger(__name__)  # __name__ is the module's name, e.g., "modbus.client"
 
-# Get absolute path to the folder where the script is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = None
+LOGS_DIR = None
+LAST_LOG_FILE = None
+DATA_DIR = None
+CONFIG_FILE = None
+network_config_dict = None
 
-#Setting log folder
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
-LAST_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
+def preparations():
+    # Get absolute path to the folder where the script is located
+    global BASE_DIR
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-setup_logging(log_level='INFO', log_file_path=LAST_LOG_FILE)
-logger.info("Starting program.")
-time.sleep(3)
+    # Setting log folder
+    global LOGS_DIR
+    LOGS_DIR = os.path.join(BASE_DIR, "logs")
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    global LAST_LOG_FILE
+    LAST_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
 
-#Setting data folder
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-# Database file inside that folder
-CONFIG_FILE = os.path.join(DATA_DIR, "config.sqlite")
-logger.info(f"Path to config file: {CONFIG_FILE}")
+    setup_logging(log_level='INFO', log_file_path=LAST_LOG_FILE)
+    logger.info("Starting program.")
+    time.sleep(3)
 
-create_modbus_rtu_config(CONFIG_FILE)
-create_servers_config(CONFIG_FILE)
-create_slaves_list(CONFIG_FILE)
+    # Setting data folder
+    global DATA_DIR
+    DATA_DIR = os.path.join(BASE_DIR, "data")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    # Database file inside that folder
+    global CONFIG_FILE
+    CONFIG_FILE = os.path.join(DATA_DIR, "config.sqlite")
+    logger.info(f"Path to config file: {CONFIG_FILE}")
 
-network_config_dict = get_servers_config(CONFIG_FILE)
-
-server = ModbusTCPServer(ip=network_config_dict["modbus_ip"], port=network_config_dict["modbus_port"])
-server.start()
-
-client = ModbusRTUCollector(
-    polling_period=1,
-    slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
-    context=server.context,
-    data_dir=DATA_DIR,
-    rtu_serial_params_dict=load_rtu_serial_params(CONFIG_FILE)
-)
-#client.start_polling()
-
-face_client = FakeTCPClient(
-    polling_period=1,
-    slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
-    data_dir=DATA_DIR
-)
-face_client.start_polling()
+    create_modbus_rtu_config(CONFIG_FILE)
+    create_servers_config(CONFIG_FILE)
+    create_slaves_list(CONFIG_FILE)
+    global network_config_dict
+    network_config_dict = get_servers_config(CONFIG_FILE)
 
 # Example usage in a program with other tasks:
 if __name__ == "__main__":
-    add_variable_to_server_config("DATA_DIR", DATA_DIR)
-    add_variable_to_server_config("CONFIG_FILE", CONFIG_FILE)
-    add_variable_to_server_config("LOGS_DIR", LOGS_DIR)
-    add_variable_to_server_config("LAST_LOG_FILE", LAST_LOG_FILE)
+    try:
+        preparations()
 
-    run_server(
-        ip=network_config_dict["flask_ip"],
-        port=network_config_dict["flask_port"]
-    )
+        server = ModbusTCPServer(ip=network_config_dict["modbus_ip"], port=network_config_dict["modbus_port"])
+        server.start()
+
+        client = ModbusRTUCollector(
+            polling_period=1,
+            slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
+            context=server.context,
+            data_dir=DATA_DIR,
+            rtu_serial_params_dict=load_rtu_serial_params(CONFIG_FILE)
+        )
+        client.start_polling()
+
+        face_client = FakeTCPClient(
+            polling_period=1,
+            slaves_config=load_slaves_list(DATA_DIR, CONFIG_FILE),
+            data_dir=DATA_DIR
+        )
+        #face_client.start_polling()
+
+        add_variable_to_server_config("DATA_DIR", DATA_DIR)
+        add_variable_to_server_config("CONFIG_FILE", CONFIG_FILE)
+        add_variable_to_server_config("LOGS_DIR", LOGS_DIR)
+        add_variable_to_server_config("LAST_LOG_FILE", LAST_LOG_FILE)
+
+        run_server(
+            ip=network_config_dict["flask_ip"],
+            port=network_config_dict["flask_port"]
+        )
+
+    except Exception as e:
+        logger.warning(f"Main function Exception: {e}")
+    finally:
+        logger.info("Stoping program.")
 
 
 
@@ -92,10 +113,10 @@ if __name__ == "__main__":
     #     context=server.context
     # )
     # client.start_polling()
-
-    while True:
-        print("Run")
-        time.sleep(2)
+    #
+    # while True:
+    #     print("Run")
+    #     time.sleep(2)
 
     # # Simulate other tasks running in the main thread
     # try:

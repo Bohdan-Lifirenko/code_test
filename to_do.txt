@@ -1,0 +1,14 @@
+-Додати видалення файлів при зменшенні місця на диску
+(https://grok.com/share/c2hhcmQtNQ%3D%3D_4cbdec4a-b25f-4456-8f3f-07a491d34e2d)
+
+-Додати правельне зупинення програми для серверів потоків...
+
+-Покращити код опитування датчиків.
+
+-Виправити проблему неможливості опитувати slaves коли відключений від локальної мережі (TCP server намагається вімкнутися):
+2025-11-05 07:07:12,735 MainThread:[INFO] modbus.modbus_tcp_server: Modbus TCP server started on 192.168.0.100:5020 in a background thread.
+2025-11-05 07:07:12,740 MainThread:[INFO] modbus.fake_tcp_client: ModbusRTUDataCollector started polling with polling period = 1 sec.
+2025-11-05 07:07:24,477 MainThread:[INFO] __main__: Path to config file: /home/robot_03/Documents/pi/data/config.sqlite
+
+2025-11-05 19:27:15,987 error
+2025-11-05 21:17:45,490 last
