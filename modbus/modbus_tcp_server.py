@@ -35,17 +35,28 @@ class ModbusTCPServer:
 
     def start(self):
         def run_server_thread():
-            StartTcpServer(
-                context=self.context,
-                address=(self.ip, self.port),
-                framer=FramerType.SOCKET
-            )
+            server_is_stared = False
+
+            while not server_is_stared:
+                try:
+                    StartTcpServer(
+                        context=self.context,
+                        address=(self.ip, self.port),
+                        framer=FramerType.SOCKET
+                    )
+
+                    server_is_stared = True
+                    logger.info(f"Modbus TCP server started on {self.ip}:{self.port} in a background thread.")
+                except RuntimeError as e:
+                    logger.warning(f"Modbus TCP server isn't started because of error: {e}")
+                    #Retry to start server
+                    time.sleep(60)
+
 
         server_thread = threading.Thread(target=run_server_thread, daemon=True)
         server_thread.start()
 
         time.sleep(0.5)
-        logger.info(f"Modbus TCP server started on {self.ip}:{self.port} in a background thread.")
 
     def stop(self):
         try:

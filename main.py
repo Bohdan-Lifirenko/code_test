@@ -24,7 +24,7 @@ os.makedirs(LOGS_DIR, exist_ok=True)
 LAST_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
 
 setup_logging(log_level='INFO', log_file_path=LAST_LOG_FILE)
-logger.warning("Starting program.")
+logger.info("Starting program.")
 time.sleep(3)
 
 #Setting data folder
